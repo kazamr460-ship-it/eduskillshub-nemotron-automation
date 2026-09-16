@@ -1,0 +1,112 @@
+{
+    "name": "EduSkillsHub Nebius Nemotron Automation",
+    "flow": [
+        {
+            "id": 1,
+            "module": "gateway:CustomWebHook",
+            "version": 1,
+            "parameters": {
+                "hook": 3730440,
+                "maxResults": 1
+            },
+            "mapper": {},
+            "metadata": {
+                "designer": { "x": 0, "y": 0 },
+                "restore": {
+                    "parameters": {
+                        "hook": {
+                            "label": "eduskillshub-gemini-trigger",
+                            "data": { "editable": "true" }
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "id": 2,
+            "module": "http:MakeRequest",
+            "version": 4,
+            "parameters": {
+                "authenticationType": "noAuth",
+                "tlsType": ""
+            },
+            "mapper": {
+                "url": "https://api.tokenfactory.nebius.com/v1/chat/completions",
+                "method": "post",
+                "headers": [
+                    {
+                        "name": "Authorization",
+                        "value": "Bearer PASTE_YOUR_NEBIUS_API_KEY_HERE"
+                    }
+                ],
+                "contentType": "json",
+                "parseResponse": true,
+                "stopOnHttpError": true,
+                "allowRedirects": true,
+                "shareCookies": false,
+                "requestCompressedContent": true,
+                "inputMethod": "jsonString",
+                "jsonStringBodyContent": "{\n  \"model\": \"nvidia/nemotron-3-super-120b-a12b\",\n  \"messages\": [\n    { \"role\": \"user\", \"content\": \"{{1.prompt}}\" }\n  ]\n}"
+            },
+            "metadata": {
+                "designer": { "x": 300, "y": 0 }
+            }
+        },
+        {
+            "id": 3,
+            "module": "util:SetVariable2",
+            "version": 1,
+            "parameters": {},
+            "mapper": {
+                "name": "generated_content",
+                "scope": "roundtrip",
+                "value": "{{2.data.choices[1].message.content}}"
+            },
+            "metadata": {
+                "designer": { "x": 600, "y": 0 }
+            }
+        },
+        {
+            "id": 4,
+            "module": "http:MakeRequest",
+            "version": 4,
+            "parameters": {
+                "authenticationType": "noAuth",
+                "tlsType": ""
+            },
+            "mapper": {
+                "url": "https://eduskillshub.site/wp-json/eduskills/v1/ingest",
+                "method": "post",
+                "contentType": "json",
+                "parseResponse": true,
+                "stopOnHttpError": true,
+                "allowRedirects": true,
+                "shareCookies": false,
+                "requestCompressedContent": true,
+                "inputMethod": "jsonString",
+                "jsonStringBodyContent": "{\n  \"source\": \"nebius-nemotron-automation\",\n  \"content\": \"{{3.generated_content}}\"\n}"
+            },
+            "metadata": {
+                "designer": { "x": 900, "y": 0 }
+            }
+        }
+    ],
+    "metadata": {
+        "instant": true,
+        "version": 1,
+        "scenario": {
+            "roundtrips": 1,
+            "maxErrors": 3,
+            "autoCommit": true,
+            "autoCommitTriggerLast": true,
+            "sequential": false,
+            "confidential": false,
+            "dataloss": false,
+            "dlq": false,
+            "freshVariables": false
+        },
+        "designer": { "orphans": [] },
+        "zone": "eu1.make.com",
+        "notes": []
+    }
+}
